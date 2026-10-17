@@ -47,6 +47,7 @@ class DetailsViewModel(
             .catch {
                 _state.update { screenState ->
                     screenState.copy(
+                        isLoading = false,
                         hasError = true,
                         errorProvider = { context -> context.getString(R.string.error_wile_loading_data) }
                     )

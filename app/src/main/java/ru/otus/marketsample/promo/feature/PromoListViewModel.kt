@@ -2,6 +2,7 @@ package ru.otus.marketsample.promo.feature
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,12 +23,15 @@ class PromoListViewModel(
     private val _state = MutableStateFlow(PromoScreenState())
     val state: StateFlow<PromoScreenState> = _state.asStateFlow()
 
+    private var requestJob: Job? = null
+
     init {
         requestPromos()
     }
 
     private fun requestPromos() {
-        consumePromosUseCase()
+        requestJob?.cancel()
+        requestJob = consumePromosUseCase()
             .map { promos ->
                 promos.map(promoStateFactory::map)
             }
@@ -45,6 +49,7 @@ class PromoListViewModel(
             .catch {
                 _state.update { screenState ->
                     screenState.copy(
+                        isLoading = false,
                         hasError = true,
                         errorProvider = { context -> context.getString(R.string.error_wile_loading_data) }
                     )

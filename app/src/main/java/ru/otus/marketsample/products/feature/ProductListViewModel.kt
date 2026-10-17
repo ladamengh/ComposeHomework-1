@@ -2,6 +2,7 @@ package ru.otus.marketsample.products.feature
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,12 +24,15 @@ class ProductListViewModel(
     private val _state = MutableStateFlow(ProductsScreenState())
     val state: StateFlow<ProductsScreenState> = _state.asStateFlow()
 
+    private var requestJob: Job? = null
+
     init {
         requestProducts()
     }
 
     private fun requestProducts() {
-        consumeProductsUseCase().map { products ->
+        requestJob?.cancel()
+        requestJob = consumeProductsUseCase().map { products ->
             products.map { product -> productStateFactory.create(product) }
         }
             .onStart {
@@ -45,6 +49,7 @@ class ProductListViewModel(
             .catch {
                 _state.update { screenState ->
                     screenState.copy(
+                        isLoading = false,
                         hasError = true,
                         errorProvider = { context -> context.getString(R.string.error_wile_loading_data) }
                     )
